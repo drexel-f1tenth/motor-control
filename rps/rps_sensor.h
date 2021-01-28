@@ -10,7 +10,7 @@
 /// Timer2 interrupt used to update RPS sensors.
 /// (interferes with analog pins 9, 10).
 // TODO: atomic
-static bool timer2_interrupt_fired;
+static volatile bool timer2_interrupt_fired = false;
 ISR(TIMER2_COMPA_vect)
 {
   timer2_interrupt_fired = true;
@@ -20,7 +20,7 @@ ISR(TIMER2_COMPA_vect)
 /// Instantaneous samples at 64Hz, Accurate accumulation at 8Hz.
 /// Note: `setup_timer2` must be called on setup to set the necessary interrupts
 /// on Timer2.
-class RPSSensor
+class RPSSensors
 {
   /// Frequency of RPS sensor data collection, in Hz.
   static constexpr size_t update_freq_hz = 64;
@@ -28,16 +28,24 @@ class RPSSensor
   static constexpr size_t sample_freq_hz = 8;
 
   static constexpr size_t threshold = 700;
-  static constexpr size_t buf_len = update_freq_hz / sample_freq_hz;
   static constexpr size_t wheel_spokes = 6;
 
-  RingBuffer<uint8_t, buf_len> _spoke_counts;
-  uint16_t _pin;
-  bool _on_spoke = false;
-  bool _shift = false;
+  struct SensorState
+  {
+    static constexpr size_t buf_len = update_freq_hz / sample_freq_hz;
+    RingBuffer<uint8_t, buf_len> spoke_counts;
+    float rps = 0.0;
+    uint8_t pin;
+    bool on_spoke = false;
 
-public:
-  RPSSensor(uint16_t pin) : _pin(pin) {}
+    SensorState(uint8_t pin_) : pin(pin_)
+    {
+      pinMode(pin, INPUT);
+    }
+  };
+
+  Array<SensorState, 2> _sensor_states;
+  bool _shift = false;
 
   static void setup_timer2()
   {
@@ -60,38 +68,49 @@ public:
     interrupts();
   }
 
+public:
+  RPSSensors(uint8_t pin1, uint8_t pin2)
+  : _sensor_states({SensorState(pin1), SensorState(pin2)})
+  {
+    setup_timer2();
+  }
+
   /// Must be run on each loop to accumulate sensor data. Return true if the
   /// angular velocity has been updated.
   bool update()
   {
-    if (_shift)
+    bool has_update = false;
+    for (auto& state : _sensor_states)
     {
-      _shift = false;
-      _spoke_counts.current() = 0;
-    }
+      size_t value = analogRead(state.pin);
+      bool detect_spoke = value < threshold;
+      if (!state.on_spoke && detect_spoke)
+      { // rising edge of spoke detection
+        state.spoke_counts.current() += 1;
+      }
+      state.on_spoke = detect_spoke;
 
-    size_t value = analogRead(_pin);
-    bool detect_spoke = value < threshold;
-    if (!_on_spoke && detect_spoke)
-    { // rising edge of spoke detection
-      _spoke_counts.current() += 1;
-    }
-    _on_spoke = detect_spoke;
+      if (timer2_interrupt_fired)
+      {
+        // Serial.println(state.spoke_counts.sum());
 
-    if (timer2_interrupt_fired)
-    {
-      _spoke_counts.shift();
-      timer2_interrupt_fired = false;
-      _shift = true;
-      return true;
+        static constexpr float multiplier =
+          (float)sample_freq_hz / (float)wheel_spokes;
+        state.rps = (float)state.spoke_counts.sum() * multiplier;
+
+        state.spoke_counts.shift();
+        state.spoke_counts.current() = 0;
+
+        timer2_interrupt_fired = false;
+        has_update = true;
+      }
     }
-    return false;
+    return has_update;
   }
 
-  float rps() const
+  /// Return the RPS values for each sensor.
+  Array<float, 2> rps() const
   {
-    static constexpr float multiplier =
-      (float)sample_freq_hz / (float)wheel_spokes;
-    return (float)_spoke_counts.sum() * multiplier;
+    return {_sensor_states[0].rps, _sensor_states[1].rps};
   }
 };

@@ -8,8 +8,13 @@
 template<typename T, size_t Len>
 struct RingBuffer
 {
-  Array<T, Len> _buf = {0};
+  Array<T, Len> _buf = {};
   size_t _index = 0;
+
+  size_t cap() const
+  {
+    return Len;
+  }
 
   void shift()
   {
