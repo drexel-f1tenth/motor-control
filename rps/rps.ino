@@ -13,19 +13,19 @@ RPSSensors rps(A0, A8);
 
 void setup()
 {
-  Serial.begin(9600);
+  node.initNode();
+  node.advertise(mcu_rps);
 }
 
 void loop()
 {
-  node.spinOnce();
   bool velocity_update = rps.update();
   if (!velocity_update)
     return;
 
-  Array<float, 2> rps_values = rps.rps();
-  mcu_rps_msg.data = rps_values[0];
-  node.publish(&mcu_rps_msg);
+  Array<float, 2> rps_values = rps.values();
   mcu_rps_msg.data = rps_values[1];
-  node.publish(&mcu_rps_msg);
+  mcu_rps.publish(&mcu_rps_msg);
+
+  node.spinOnce();
 }

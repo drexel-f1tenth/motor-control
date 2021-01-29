@@ -79,7 +79,7 @@ public:
   /// angular velocity has been updated.
   bool update()
   {
-    bool has_update = false;
+    bool has_update = timer2_interrupt_fired;
     for (auto& state : _sensor_states)
     {
       size_t value = analogRead(state.pin);
@@ -90,26 +90,25 @@ public:
       }
       state.on_spoke = detect_spoke;
 
-      if (timer2_interrupt_fired)
+      if (has_update)
       {
-        // Serial.println(state.spoke_counts.sum());
-
         static constexpr float multiplier =
           (float)sample_freq_hz / (float)wheel_spokes;
         state.rps = (float)state.spoke_counts.sum() * multiplier;
 
         state.spoke_counts.shift();
         state.spoke_counts.current() = 0;
-
-        timer2_interrupt_fired = false;
-        has_update = true;
       }
     }
+
+    if (has_update)
+      timer2_interrupt_fired = false;
+
     return has_update;
   }
 
   /// Return the RPS values for each sensor.
-  Array<float, 2> rps() const
+  Array<float, 2> values() const
   {
     return {_sensor_states[0].rps, _sensor_states[1].rps};
   }
