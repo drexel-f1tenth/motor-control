@@ -24,7 +24,7 @@ static size_t constexpr throttle_pin = 8;
 Servo throttle;
 
 RPSSensors rps(A0, A8);
-PID pid(0.1, 0.0, 0.0);
+PID pid(1.0, 0.0, 0.0);
 float rps_setpoint = 0.0;
 
 void mcu_velocity_cb(std_msgs::UInt8 const& msg)
@@ -35,21 +35,9 @@ void mcu_velocity_cb(std_msgs::UInt8 const& msg)
 
 void adjust_throttle(int16_t rps_adjust)
 {
-  static_assert(sizeof(size_t) > 1);
-  static int16_t constexpr neutral_deg = 60;
-
-  static int16_t throttle_position_deg = 0;
-  // Note that no effort is made to convert adjustment RPS to degrees.
-  throttle_position_deg += rps_adjust;
-  throttle_position_deg = constrain(throttle_position_deg, -60, 60);
-
-  static char buf[16];
-  sprintf(buf, "throttle: %+d", throttle_position_deg);
-  mcu_dbg_msg.data = buf;
-  mcu_dbg.publish(&mcu_dbg_msg);
-
-  size_t position_deg = throttle_position_deg + neutral_deg;
-  throttle.write(position_deg);
+  static int16_t constexpr neutral_deg = 90;
+  int16_t pos = constrain(rps_adjust, -60, 60) + neutral_deg;
+  throttle.write(pos);
 }
 
 void setup()
@@ -76,7 +64,13 @@ void loop()
   int16_t rps_adjust = (int16_t)round(pid.update(avg_rps, rps_setpoint));
 
   static char buf[16];
-  sprintf(buf, "rps_adjust: %+d", rps_adjust);
+  // sprintf(buf, "rps: %d %d", (int16_t)rps_values[0], (int16_t)rps_values[1]);
+  sprintf(
+    buf,
+    "rps: %+d %+d %+d",
+    (int16_t)round(avg_rps),
+    (int16_t)round(rps_setpoint),
+    rps_adjust);
   mcu_dbg_msg.data = buf;
   mcu_dbg.publish(&mcu_dbg_msg);
 
