@@ -24,7 +24,8 @@ static size_t constexpr throttle_pin = 8;
 Servo throttle;
 
 RPSSensors rps(A0, A8);
-PID pid(1.5, 0.01, 0.4);
+PID pid(1.30, 0.01, 0.00);
+
 float rps_setpoint = 0.0;
 
 void mcu_velocity_cb(std_msgs::UInt8 const& msg)
@@ -62,6 +63,7 @@ void loop()
   mcu_rps.publish(&mcu_rps_msg);
 
   int16_t rps_adjust = (int16_t)round(pid.update(avg_rps, rps_setpoint));
+  rps_adjust = constrain(rps_adjust, -40.0, 40.0);
 
   static char buf[16];
   // sprintf(buf, "rps: %d %d", (int16_t)rps_values[0], (int16_t)rps_values[1]);

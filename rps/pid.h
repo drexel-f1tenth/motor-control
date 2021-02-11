@@ -10,8 +10,7 @@ class PID
   float _prev_err = 0.0;
 
 public:
-  PID(float kp, float ki, float kd): _kp(kp), _ki(ki), _kd(kd)
-  {}
+  PID(float kp, float ki, float kd) : _kp(kp), _ki(ki), _kd(kd) {}
 
   float update(float input, float setpoint)
   {
