@@ -10,5 +10,8 @@ build: rps.ino
 flash: build
 	arduino-cli upload -p $(PORT) -b $(BOARD) -v
 
+run: flash
+	rosrun rosserial_arduino serial_node.py _port:=$(PORT)
+
 clean:
 	rm -rf build
