@@ -24,7 +24,7 @@ static size_t constexpr throttle_pin = 8;
 Servo throttle;
 
 RPSSensors rps(A0, A8);
-PID pid(1.0, 0.0, 0.0);
+PID pid(2.8, 0.02, 0.0);
 float rps_setpoint = 0.0;
 
 void mcu_velocity_cb(std_msgs::UInt8 const& msg)
