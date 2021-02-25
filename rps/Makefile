@@ -1,6 +1,6 @@
 
 PORT ?= /dev/ttyACM0
-BOARD ?= arduino:avr:micro
+BOARD ?= arduino:avr:mega
 
 .PHONY: clean flash run
 

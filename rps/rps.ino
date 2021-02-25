@@ -23,6 +23,8 @@ ros::Subscriber<std_msgs::UInt8> mcu_velocity("mcu/velocity", &mcu_velocity_cb);
 static size_t constexpr throttle_pin = 8;
 Servo throttle;
 
+static constexpr float throttle_cap = 25.0;
+
 RPSSensors rps(A0, A8);
 PID pid(1.30, 0.01, 0.00);
 
@@ -37,7 +39,7 @@ void mcu_velocity_cb(std_msgs::UInt8 const& msg)
 void adjust_throttle(int16_t rps_adjust)
 {
   static int16_t constexpr neutral_deg = 90;
-  int16_t pos = constrain(rps_adjust, -60, 60) + neutral_deg;
+  int16_t pos = neutral_deg + rps_adjust;
   throttle.write(pos);
 }
 
@@ -63,7 +65,7 @@ void loop()
   mcu_rps.publish(&mcu_rps_msg);
 
   int16_t rps_adjust = (int16_t)round(pid.update(avg_rps, rps_setpoint));
-  rps_adjust = constrain(rps_adjust, -40.0, 40.0);
+  rps_adjust = constrain(rps_adjust, -throttle_cap, throttle_cap);
 
   static char buf[16];
   sprintf(

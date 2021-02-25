@@ -7,13 +7,17 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/// Timer2 interrupt used to update RPS sensors.
-/// (interferes with analog pins 9, 10).
+/// time interrupt used to update RPS sensors.
 // TODO: atomic
-static volatile bool timer2_interrupt_fired = false;
+static volatile bool rps_timer_interrupt_fired = false;
+#ifdef __AVR_ATmega2560__
+/// (interferes with analog pins 9, 10).
 ISR(TIMER2_COMPA_vect)
+#else
+ISR(TIMER3_COMPA_vect)
+#endif
 {
-  timer2_interrupt_fired = true;
+  rps_timer_interrupt_fired = true;
 }
 
 /// Tacks the angular velocity (in RPS) of a wheel.
@@ -47,24 +51,26 @@ class RPSSensors
   Array<SensorState, 2> _sensor_states;
   bool _shift = false;
 
-  static void setup_timer2()
+  static void setup_timer_interrupt()
   {
-    // generated from
-    // https://www.arduinoslovakia.eu/application/timer-calculator
-
     noInterrupts();
-    // Clear registers
-    TCCR1A = 0;
-    TCCR1B = 0;
-    TCNT1 = 0;
-    // 64 Hz (16000000/((31249+1)*8))
-    OCR1A = 31249;
-    // CTC
-    TCCR1A |= (1 << WGM12);
-    // Prescaler 8
-    TCCR1B |= (1 << CS11);
-    // Output Compare Match A Interrupt Enable
-    TIMSK1 |= (1 << OCIE1A);
+#ifdef __AVR_ATmega2560__
+    TCCR2A = 0;
+    TCCR2B = 0;
+    TCNT2 = 0;
+    OCR2A = 243;
+    TCCR2A |= (1 << WGM21);
+    TCCR2B |= (1 << CS22) | (1 << CS21) | (1 << CS20);
+    TIMSK2 |= (1 << OCIE2A);
+#else
+    TCCR3A = 0;
+    TCCR3B = 0;
+    TCNT3 = 0;
+    OCR3A = 31249;
+    TCCR3A |= (1 << WGM32);
+    TCCR3B |= (1 << CS31);
+    TIMSK3 |= (1 << OCIE3A);
+#endif
     interrupts();
   }
 
@@ -72,14 +78,14 @@ public:
   RPSSensors(uint8_t pin1, uint8_t pin2)
   : _sensor_states({SensorState(pin1), SensorState(pin2)})
   {
-    setup_timer2();
+    setup_timer_interrupt();
   }
 
   /// Must be run on each loop to accumulate sensor data. Return true if the
   /// angular velocity has been updated.
   bool update()
   {
-    bool has_update = timer2_interrupt_fired;
+    bool has_update = rps_timer_interrupt_fired;
     for (auto& state : _sensor_states)
     {
       size_t value = analogRead(state.pin);
@@ -102,7 +108,7 @@ public:
     }
 
     if (has_update)
-      timer2_interrupt_fired = false;
+      rps_timer_interrupt_fired = false;
 
     return has_update;
   }
