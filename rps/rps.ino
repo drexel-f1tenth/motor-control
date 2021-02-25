@@ -66,7 +66,6 @@ void loop()
   rps_adjust = constrain(rps_adjust, -40.0, 40.0);
 
   static char buf[16];
-  // sprintf(buf, "rps: %d %d", (int16_t)rps_values[0], (int16_t)rps_values[1]);
   sprintf(
     buf,
     "rps: %+d %+d %+d",

@@ -1,10 +1,12 @@
 
 PORT := /dev/ttyACM0
-BOARD := arduino:avr:mega
+BOARD := arduino:avr:micro
 
 .PHONY: clean flash run
 
-build: rps.ino
+C_SRC = $(wildcard *.ino) $(wildcard *.h)
+
+build: $(C_SRC)
 	arduino-cli compile -p $(PORT) -b $(BOARD) -v
 
 flash: build

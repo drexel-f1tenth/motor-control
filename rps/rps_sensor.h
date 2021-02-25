@@ -54,17 +54,17 @@ class RPSSensors
 
     noInterrupts();
     // Clear registers
-    TCCR2A = 0;
-    TCCR2B = 0;
-    TCNT2 = 0;
-    // 64.03688524590164 Hz (16000000/((243+1)*1024))
-    OCR2A = 243;
+    TCCR1A = 0;
+    TCCR1B = 0;
+    TCNT1 = 0;
+    // 64 Hz (16000000/((31249+1)*8))
+    OCR1A = 31249;
     // CTC
-    TCCR2A |= (1 << WGM21);
-    // Prescaler 1024
-    TCCR2B |= (1 << CS22) | (1 << CS21) | (1 << CS20);
+    TCCR1A |= (1 << WGM12);
+    // Prescaler 8
+    TCCR1B |= (1 << CS11);
     // Output Compare Match A Interrupt Enable
-    TIMSK2 |= (1 << OCIE2A);
+    TIMSK1 |= (1 << OCIE1A);
     interrupts();
   }
 
