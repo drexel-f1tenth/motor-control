@@ -5,20 +5,16 @@
 #include <Arduino.h>
 #include <Servo.h>
 #include <ros.h>
-#include <std_msgs/Float32.h>
 #include <std_msgs/String.h>
 #include <std_msgs/UInt8.h>
 
 ros::NodeHandle node;
 
-std_msgs::Float32 mcu_rps_msg;
-ros::Publisher mcu_rps("mcu/rps", &mcu_rps_msg);
-
 std_msgs::String mcu_dbg_msg;
 ros::Publisher mcu_dbg("mcu/dbg", &mcu_dbg_msg);
 
-void mcu_velocity_cb(std_msgs::UInt8 const&);
-ros::Subscriber<std_msgs::UInt8> mcu_velocity("mcu/velocity", &mcu_velocity_cb);
+void mcu_rps_cb(std_msgs::UInt8 const&);
+ros::Subscriber<std_msgs::UInt8> mcu_rps("mcu/rps", &mcu_rps_cb);
 
 static size_t constexpr throttle_pin = 8;
 Servo throttle;
@@ -30,7 +26,7 @@ PID pid(1.30, 0.01, 0.00);
 
 float rps_setpoint = 0.0;
 
-void mcu_velocity_cb(std_msgs::UInt8 const& msg)
+void mcu_rps_cb(std_msgs::UInt8 const& msg)
 {
   // TODO: msg should be in MPS[0, ?], not RPS[0, 38]
   rps_setpoint = (float)msg.data;
@@ -48,9 +44,8 @@ void setup()
   throttle.attach(throttle_pin);
 
   node.initNode();
-  node.advertise(mcu_rps);
   node.advertise(mcu_dbg);
-  node.subscribe(mcu_velocity);
+  node.subscribe(mcu_rps);
 }
 
 void loop()
@@ -61,8 +56,6 @@ void loop()
 
   Array<float, 2> rps_values = rps.values();
   float avg_rps = (rps_values[0] + rps_values[1]) / 2;
-  mcu_rps_msg.data = avg_rps;
-  mcu_rps.publish(&mcu_rps_msg);
 
   int16_t rps_adjust = (int16_t)round(pid.update(avg_rps, rps_setpoint));
   rps_adjust = constrain(rps_adjust, -throttle_cap, throttle_cap);
