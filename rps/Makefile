@@ -4,7 +4,9 @@ BOARD ?= arduino:avr:mega
 # BOARD ?= SparkFun:avr:promicro:cpu=16MHzatmega32U4
 ADDITIONAL_URLS ?= --additional-urls "https://raw.githubusercontent.com/sparkfun/Arduino_Boards/master/IDE_Board_Manager/package_sparkfun_index.json"
 
-.PHONY: clean deps flash run
+.PHONY: all clean deps flash run
+
+all: run
 
 deps:
 	arduino-cli core update-index $(ADDITIONAL_URLS)

@@ -19,10 +19,10 @@ ros::Subscriber<std_msgs::UInt8> mcu_rps("mcu/rps", &mcu_rps_cb);
 static size_t constexpr throttle_pin = 8;
 Servo throttle;
 
-static constexpr float throttle_cap = 25.0;
+static constexpr float throttle_cap = 10.0;
 
 RPSSensors rps(A0, A8);
-PID pid(1.30, 0.01, 0.00);
+// PID pid(2.30, 0.00, 0.00);
 
 float rps_setpoint = 0.0;
 
@@ -57,8 +57,8 @@ void loop()
   Array<float, 2> rps_values = rps.values();
   float avg_rps = (rps_values[0] + rps_values[1]) / 2;
 
-  int16_t rps_adjust = (int16_t)round(pid.update(avg_rps, rps_setpoint));
-  rps_adjust = constrain(rps_adjust, -throttle_cap, throttle_cap);
+  // int16_t rps_adjust = (int16_t)round(pid.update(avg_rps, rps_setpoint));
+  // rps_adjust = constrain(rps_adjust, -throttle_cap, throttle_cap);
 
   static char buf[16];
   sprintf(
@@ -66,11 +66,37 @@ void loop()
     "rps: %+d %+d %+d",
     (int16_t)round(avg_rps),
     (int16_t)round(rps_setpoint),
-    rps_adjust);
+    // rps_adjust
+    0);
   mcu_dbg_msg.data = buf;
   mcu_dbg.publish(&mcu_dbg_msg);
 
-  adjust_throttle(rps_adjust);
+  // adjust_throttle(rps_adjust);
+
+  static size_t throttle_divider = 0;
+  if (rps_setpoint > 0.0)
+  {
+    throttle_divider += 1;
+    if (throttle_divider == 4)
+    {
+      throttle_divider = 0;
+      adjust_throttle(0);
+    }
+    else
+    {
+      adjust_throttle(6);
+    }
+  }
+  else
+  {
+    if (avg_rps > 2.0)
+    {
+      adjust_throttle(-20);
+      delay(20 * (throttle_divider + 1));
+    }
+    adjust_throttle(0);
+    // delay(500);
+  }
 
   node.spinOnce();
 }
