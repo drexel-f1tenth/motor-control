@@ -1,11 +1,21 @@
-
-PORT := /dev/ttyACM0
-BOARD := arduino:avr:mega
+PORT ?= /dev/ttyACM0
+# BOARD ?= arduino:avr:mega
+BOARD ?= SparkFun:avr:promicro:cpu=16MHzatmega32U4
+ADDITIONAL_URLS ?= --additional-urls "https://raw.githubusercontent.com/sparkfun/Arduino_Boards/master/IDE_Board_Manager/package_sparkfun_index.json"
 
 .PHONY: clean flash run
 
-build: motor-control.ino
-	arduino-cli compile -p $(PORT) -b $(BOARD) -v
+all: run
+
+deps:
+	arduino-cli core update-index $(ADDITIONAL_URLS)
+	arduino-cli core install SparkFun:avr $(ADDITIONAL_URLS)
+	arduino-cli lib install servo
+	rosrun rosserial_arduino make_libraries.py ~/Arduino/libraries
+
+C_SRC = motor-control.ino $(wildcard ds/*.h)
+build: $(C_SRC)
+	arduino-cli compile -b $(BOARD) -v --warnings all --libraries ros_lib
 
 flash: build
 	arduino-cli upload -p $(PORT) -b $(BOARD) -v
