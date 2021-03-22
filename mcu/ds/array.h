@@ -17,12 +17,27 @@ struct Array
     return _data[index];
   }
 
-  T* begin() const
+  T const& operator[](size_t index) const
+  {
+    return _data[index];
+  }
+
+  T* begin()
   {
     return _data;
   }
 
-  T* end() const
+  T const* begin() const
+  {
+    return _data;
+  }
+
+  T* end()
+  {
+    return &_data[Len];
+  }
+
+  T const* end() const
   {
     return &_data[Len];
   }
