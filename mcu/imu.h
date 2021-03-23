@@ -28,4 +28,14 @@ public:
   {
     return _device.statusString();
   }
+
+  inline void update()
+  {
+    _device.getAGMT();
+  }
+
+  inline Array<float, 3> accelerometer_data()
+  {
+    return {_device.accX(), _device.accY(), _device.accZ()};
+  }
 };
