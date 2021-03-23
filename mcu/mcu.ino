@@ -19,7 +19,7 @@ void setup()
   throttle.attach(8);
   rps.init();
   node.init();
-  imu.init(2);
+  imu.init(53);
 
   while (!node.connected())
   {
@@ -38,6 +38,8 @@ void loop()
   bool rps_update = rps.update();
   if (!rps_update)
     return;
+
+  node.log("IMU: %d, %s", imu.ready(), imu.status_str());
 
   Array<float, 2> rps_values = rps.values();
   float avg_rps = (rps_values[0] + rps_values[1]) / 2.0;

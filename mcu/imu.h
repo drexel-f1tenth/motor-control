@@ -5,22 +5,27 @@
 
 class IMU
 {
-  ICM_20948_SPI device;
+  ICM_20948_SPI _device;
 
 public:
   inline void init(uint8_t cs_pin)
   {
     SPI.begin();
-    device.begin(cs_pin, SPI);
+    _device.begin(cs_pin, SPI);
+  }
+
+  inline bool ready()
+  {
+    return _device.dataReady();
   }
 
   inline ICM_20948_Status_e status() const
   {
-    return device.status;
+    return _device.status;
   }
 
   inline char const* status_str()
   {
-    return device.statusString();
+    return _device.statusString();
   }
 };
