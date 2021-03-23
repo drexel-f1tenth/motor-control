@@ -31,7 +31,7 @@ void setup()
     node.log<ROSNode::Log::ERROR>("IMU error: %s", imu.status_str());
 }
 
-uint16_t first_decimal(float value)
+static inline constexpr uint16_t first_decimal(float value)
 {
   return (uint16_t)round((value - floor(value)) * 10);
 }
@@ -56,7 +56,7 @@ void loop()
   node.log(
     "RPS: %d, %d.%u, %d",
     throttle_setpoint,
-    (int16_t)round(avg_rps),
+    (int16_t)avg_rps,
     first_decimal(avg_rps),
     adjust);
 
