@@ -8,7 +8,7 @@ class IMU
   ICM_20948_SPI device;
 
 public:
-  IMU(uint8_t cs_pin)
+  inline void init(uint8_t cs_pin)
   {
     SPI.begin();
     device.begin(cs_pin, SPI);

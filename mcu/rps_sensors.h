@@ -54,7 +54,7 @@ class RPSSensors
   Array<SensorState, _count> _sensor_states;
   bool _shift = false;
 
-  static void setup_timer_interrupt()
+  static inline void setup_timer_interrupt()
   {
     noInterrupts();
 #ifdef __AVR_ATmega2560__
@@ -82,13 +82,16 @@ public:
   {
     for (size_t i = 0; i < _count; i++)
       _sensor_states[i] = SensorState(pins[i]);
+  }
 
+  inline void init()
+  {
     setup_timer_interrupt();
   }
 
   /// Must be run on each loop to accumulate sensor data. Return true if the
   /// angular velocity has been updated.
-  bool update()
+  inline bool update()
   {
     bool has_update = rps_timer_interrupt_fired;
     for (auto& state : _sensor_states)
@@ -119,7 +122,7 @@ public:
   }
 
   /// Return the RPS values for each sensor.
-  Array<float, _count> values() const
+  inline Array<float, _count> values() const
   {
     Array<float, _count> vals;
     for (size_t i = 0; i < _count; i++)

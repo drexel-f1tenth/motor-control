@@ -5,8 +5,10 @@
 #include <Arduino.h>
 #include <Servo.h>
 
+using rosserial_msgs::Log;
+
 RPSSensors<2> rps({A0, A8});
-IMU imu(2);
+IMU imu;
 Servo throttle;
 
 static int16_t throttle_setpoint = 0.0;
@@ -15,8 +17,18 @@ ROSNode node([](auto const& msg) { throttle_setpoint = (int16_t)msg.data; });
 void setup()
 {
   throttle.attach(8);
+  rps.init();
+  node.init();
+  imu.init(2);
+
+  while (!node.connected())
+  {
+    node.spin_once();
+    delay(500);
+  }
+
   if (imu.status() != ICM_20948_Stat_Ok)
-    node.debug("%s", imu.status_str());
+    node.log<Log::ERROR>("IMU error: %s", imu.status_str());
 }
 
 void loop()
@@ -30,7 +42,7 @@ void loop()
   Array<float, 2> rps_values = rps.values();
   float avg_rps = (rps_values[0] + rps_values[1]) / 2.0;
 
-  node.debug(
+  node.log(
     "value: %d, %d.%d",
     throttle_setpoint,
     (int16_t)round(avg_rps),
