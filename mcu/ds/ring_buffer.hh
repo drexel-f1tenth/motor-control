@@ -1,9 +1,8 @@
 #pragma once
 
-#include "array.h"
+#include "array.hh"
 
 #include <stddef.h>
-#include <stdint.h>
 
 template<typename T, size_t Len>
 struct RingBuffer
@@ -32,9 +31,10 @@ struct RingBuffer
     shift();
   }
 
-  T sum() const
+  template<typename S = T>
+  S sum() const
   {
-    T s = 0;
+    S s = 0;
     for (auto x : _buf)
       s += x;
 
