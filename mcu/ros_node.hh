@@ -4,7 +4,7 @@
 #include <ArduinoHardware.h>
 #include <ros.h>
 #include <ros/node_handle.h>
-#include <std_msgs/UInt8.h>
+#include <std_msgs/Int8.h>
 
 class ROSNode
 {
@@ -12,14 +12,14 @@ public:
   static constexpr char const* control_topic = "mcu/ctl";
 
   using Log = rosserial_msgs::Log;
-  using Msg = std_msgs::UInt8;
+  using Msg = std_msgs::Int8;
   using Callback = void (*)(Msg const&);
 
 private:
   // Explicitly restrict memory utilization from NodeHandle.
   // template args: MAX_SUBSCRIBERS, MAX_PUBLISHERS, INPUT_SIZE, OUTPUT_SIZE
   ros::NodeHandle_<ArduinoHardware, 1, 0, 128, 128> _node;
-  ros::Subscriber<std_msgs::UInt8> _mcu_ctl;
+  ros::Subscriber<std_msgs::Int8> _mcu_ctl;
   char _msg_buf[32];
 
 public:

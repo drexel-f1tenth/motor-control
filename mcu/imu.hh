@@ -2,6 +2,7 @@
 
 #include <ICM_20948.h>
 #include <SPI.h>
+#include "ds/array.hh"
 
 class IMU
 {

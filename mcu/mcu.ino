@@ -1,23 +1,24 @@
-#include "imu.h"
-#include "pid.h"
-#include "ros_node.h"
-#include "rps_sensors.h"
+#include "imu.hh"
+#include "pid.hh"
+#include "ros_node.hh"
+#include "rps_sensors.hh"
+#include "timer_interrupt.hh"
 
 #include <Arduino.h>
 #include <Servo.h>
 
-RPSSensors<2> rps({A0, A8});
+RPSSensor rps{A0, A8, timer_interrupt_flag};
 IMU imu;
 Servo throttle;
-PID pid(1.0, 0.0, 0.0);
+PID pid{1.0, 0.0, 0.0};
 
 static int16_t throttle_setpoint = 0.0;
-ROSNode node([](auto const& msg) { throttle_setpoint = (int16_t)msg.data; });
+ROSNode node{[](auto const& msg) { throttle_setpoint = (int16_t)msg.data; }};
 
 void setup()
 {
+  setup_timer_interrupt();
   throttle.attach(8);
-  rps.init();
   node.init();
   imu.init(53);
 
@@ -44,20 +45,19 @@ void loop()
   if (!rps_update)
     return;
 
-  node.log("IMU: %d, %s", imu.ready(), imu.status_str());
-
-  Array<float, 2> const rps_values = rps.values();
-  float const avg_rps = (rps_values[0] + rps_values[1]) / 2.0;
+  // node.log("IMU: %d, %s", imu.ready(), imu.status_str());
 
   static constexpr int16_t throttle_cap = 30;
-  int16_t adjust = (int16_t)pid.update(avg_rps, (float)throttle_setpoint);
+  // int16_t adjust = (int16_t)pid.update(rps.value(),
+  // (float)throttle_setpoint);
+  int16_t adjust = throttle_setpoint;
   adjust = constrain(adjust, -throttle_cap, throttle_cap);
 
   node.log(
     "RPS: %d, %d.%u, %d",
     throttle_setpoint,
-    (int16_t)avg_rps,
-    first_decimal(avg_rps),
+    (int16_t)rps.value(),
+    first_decimal(rps.value()),
     adjust);
 
   static constexpr int16_t throttle_neutral = 90;
