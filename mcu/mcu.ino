@@ -1,7 +1,7 @@
 #include "imu.hh"
 #include "pid.hh"
 #include "ros_node.hh"
-#include "rps_sensors.hh"
+#include "rps_sensor.hh"
 #include "timer_interrupt.hh"
 
 #include <Arduino.h>
