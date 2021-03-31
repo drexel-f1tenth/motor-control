@@ -10,7 +10,7 @@
 RPSSensor rps{A0, A8, timer_interrupt_flag};
 IMU imu;
 Servo throttle;
-PID pid{1.0, 0.0, 0.0};
+PID pid{1.4, 0.03, 0.0};
 
 static int16_t throttle_setpoint = 0.0;
 ROSNode node{[](auto const& msg) { throttle_setpoint = (int16_t)msg.data; }};
@@ -48,9 +48,7 @@ void loop()
   // node.log("IMU: %d, %s", imu.ready(), imu.status_str());
 
   static constexpr int16_t throttle_cap = 30;
-  // int16_t adjust = (int16_t)pid.update(rps.value(),
-  // (float)throttle_setpoint);
-  int16_t adjust = throttle_setpoint;
+  int16_t adjust = (int16_t)pid.update(rps.value(), (float)throttle_setpoint);
   adjust = constrain(adjust, -throttle_cap, throttle_cap);
 
   node.log(
