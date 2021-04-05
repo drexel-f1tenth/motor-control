@@ -16,7 +16,7 @@ deps:
 	arduino-cli lib install $(DEPS_LIBS)
 	rosrun rosserial_arduino make_libraries.py ~/Arduino/libraries
 
-C_SRC = $(shell find mcu -name '*.ino' -o -name '*.hh')
+C_SRC = $(shell find mcu -name '*.ino' -o -name '*.h')
 build: $(C_SRC)
 	arduino-cli compile -b $(BOARD) mcu \
 		--warnings all --libraries ros_lib --output-dir build \
