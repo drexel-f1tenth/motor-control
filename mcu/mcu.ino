@@ -60,6 +60,26 @@ void loop()
   if (!rps_update)
     return;
 
+  static constexpr int16_t throttle_cap = 30;
+
+  int16_t adjust = 0;
+  if (throttle_setpoint == 0)
+    adjust = (int16_t)pid.update(rps.value(), (float)throttle_setpoint);
+  else
+    adjust = throttle_setpoint;
+
+  adjust = constrain(adjust, -throttle_cap, throttle_cap);
+
+  static constexpr int16_t throttle_neutral = 90;
+  throttle.write(throttle_neutral + adjust);
+
+  node.log(
+    "RPS: %d, %d.%u, %d",
+    throttle_setpoint,
+    (int16_t)rps.value(),
+    first_decimal(rps.value()),
+    adjust);
+
   imu.update();
   if (imu.ready())
   {
@@ -71,24 +91,4 @@ void loop()
       (int16_t)acc[1],
       first_decimal(acc[1]));
   }
-
-  static constexpr int16_t throttle_cap = 30;
-
-  int16_t adjust = 0;
-  if (throttle_setpoint == 0)
-    adjust = (int16_t)pid.update(rps.value(), (float)throttle_setpoint);
-  else
-    adjust = throttle_setpoint;
-
-  adjust = constrain(adjust, -throttle_cap, throttle_cap);
-
-  node.log(
-    "RPS: %d, %d.%u, %d",
-    throttle_setpoint,
-    (int16_t)rps.value(),
-    first_decimal(rps.value()),
-    adjust);
-
-  static constexpr int16_t throttle_neutral = 90;
-  throttle.write(throttle_neutral + adjust);
 }
