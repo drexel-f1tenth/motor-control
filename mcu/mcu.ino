@@ -20,17 +20,19 @@ ROSNode node{[](auto const& serialized) {
   throttle_setpoint = (int16_t)msg.throttle;
 
   static int16_t steering_setpoint = 0;
+  static constexpr int16_t steering_neutral = 90;
+  static constexpr int16_t steering_cap = 40;
   if (msg.steering != steering_setpoint)
   {
-    // TODO constrain steering angle
-    steering_setpoint = msg.steering;
-    steering.write(msg.steering);
+    steering_setpoint = constrain(msg.steering, -steering_cap, steering_cap);
+    steering.write(steering_neutral + steering_setpoint);
   }
 }};
 
 void setup()
 {
   setup_timer_interrupt();
+  steering.attach(6);
   throttle.attach(8);
   node.init();
   imu.init(53);
