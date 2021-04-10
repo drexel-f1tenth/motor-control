@@ -1,11 +1,7 @@
 #!/bin/bash
 
 for f in ./*.txt; do
-  output_num="${f##*-}"
-  output_num="${output_num%%.*}"
-  output_num="$(echo "${output_num} / 0.6" | bc)"
-  # new extension is used to avoid file name conflicts when renaming
-  output_file="log-${output_num}.csv.new"
+  output_file="$(echo "${f}" | awk -F '[-.]' '{print "log-" ($2 / 0.6) ".csv.new"}')"
   echo "setpoint,RPS,adjust,acc_x,acc_y" >"${output_file}"
   cat "${f}" |
     sed 's/^\[.*\]: //g' |
