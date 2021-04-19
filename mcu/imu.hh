@@ -1,18 +1,22 @@
 #pragma once
 
-#include <ICM_20948.h>
-#include <SPI.h>
 #include "ds/array.hh"
+
+#include <ICM_20948.h>
+#include <Wire.h>
+
+#define WIRE_PORT Wire
 
 class IMU
 {
-  ICM_20948_SPI _device;
+  ICM_20948_I2C _device;
 
 public:
-  inline void init(uint8_t cs_pin)
+  inline void init()
   {
-    SPI.begin();
-    _device.begin(cs_pin, SPI);
+    WIRE_PORT.begin();
+    WIRE_PORT.setClock(400000);
+    _device.begin(WIRE_PORT, true);
   }
 
   inline bool ready()
