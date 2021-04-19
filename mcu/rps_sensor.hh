@@ -32,7 +32,11 @@ class RPSSensor
 
   struct Sensor
   {
+    static constexpr size_t filter_depth = 8;
+    static_assert(__builtin_popcount(filter_depth) == 1);
+
     uint8_t pin;
+    RingBuffer<uint16_t, filter_depth> filter;
 
     Sensor(uint8_t pin_) : pin(pin_)
     {
@@ -41,7 +45,9 @@ class RPSSensor
 
     bool detects_spoke()
     {
-      return analogRead(pin) < threshold;
+      filter.push(analogRead(pin));
+      auto const value = filter.sum() / filter_depth;
+      return value < threshold;
     }
   };
 
