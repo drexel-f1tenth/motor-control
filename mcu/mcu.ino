@@ -7,7 +7,7 @@
 #include <Arduino.h>
 #include <Servo.h>
 
-RPSSensor rps{A0, A8, timer_interrupt_flag};
+RPSSensor rps{A0, A1, timer_interrupt_flag};
 IMU imu;
 Servo steering;
 Servo throttle;
