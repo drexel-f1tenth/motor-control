@@ -1,6 +1,6 @@
 PORT ?= /dev/ttyACM0
-BOARD ?= arduino:avr:mega
-# BOARD ?= SparkFun:avr:promicro:cpu=16MHzatmega32U4
+# BOARD ?= arduino:avr:mega
+BOARD ?= arduino:avr:uno
 ADDITIONAL_URLS ?= --additional-urls "https://raw.githubusercontent.com/sparkfun/Arduino_Boards/master/IDE_Board_Manager/package_sparkfun_index.json"
 DEPS_LIBS ?= \
 	"SparkFun 9DoF IMU Breakout - ICM 20948 - Arduino Library" \
@@ -12,7 +12,6 @@ all: run
 
 deps:
 	arduino-cli core update-index $(ADDITIONAL_URLS)
-	arduino-cli core install SparkFun:avr $(ADDITIONAL_URLS)
 	arduino-cli lib install $(DEPS_LIBS)
 	rosrun rosserial_arduino make_libraries.py ~/Arduino/libraries
 
