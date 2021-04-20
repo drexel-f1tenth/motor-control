@@ -20,11 +20,11 @@ C_SRC = $(shell find mcu -name '*.ino' -o -name '*.hh')
 build: $(C_SRC)
 	arduino-cli compile -b $(BOARD) mcu \
 		--warnings all --libraries ros_lib --output-dir build \
-		--build-properties build.extra_flags="-std=c++17"
+		--build-property "compiler.cpp.extra_flags=-std=c++17"
 
 flash: build
 	arduino-cli upload -p $(PORT) -b $(BOARD) \
-		-v --input-dir build
+		-v --verify --input-dir build
 
 run: flash
 	rosrun rosserial_arduino serial_node.py _port:=$(PORT)
