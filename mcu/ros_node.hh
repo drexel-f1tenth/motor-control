@@ -22,7 +22,7 @@ public:
 
     Ctl(Serialized const& serialized)
     : throttle{(int8_t)(serialized.data >> 8)},
-      steering{(int8_t)serialized.data}
+      steering{(int8_t)(serialized.data & 0xff)}
     {}
   };
 
