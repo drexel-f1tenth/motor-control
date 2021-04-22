@@ -23,7 +23,7 @@ ROSNode node{[](auto const& serialized) {
   set_steering(msg.steering);
 }};
 
-static void set_steering(int16_t setpoint)
+static inline void set_steering(int16_t setpoint)
 {
   static constexpr int16_t steering_neutral = 90;
   static constexpr int16_t steering_cap = 40;
@@ -31,7 +31,7 @@ static void set_steering(int16_t setpoint)
   steering.write(steering_neutral + setpoint);
 }
 
-static void set_throttle(int16_t adjust)
+static inline void set_throttle(int16_t adjust)
 {
   static constexpr int16_t throttle_neutral = 90;
   static constexpr int16_t throttle_cap = 30;
@@ -92,7 +92,6 @@ void loop()
     adjust = throttle_setpoint;
 
   set_throttle(adjust);
-
 
   imu.update();
   if (imu.ready())
