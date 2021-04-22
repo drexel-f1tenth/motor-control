@@ -35,7 +35,7 @@ void setup()
   steering.attach(6);
   throttle.attach(8);
   node.init();
-  imu.init(53);
+  imu.init();
 
   while (!node.connected())
   {
@@ -43,8 +43,11 @@ void setup()
     delay(500);
   }
 
-  if (imu.status() != ICM_20948_Stat_Ok)
+  while (imu.status() != ICM_20948_Stat_Ok)
+  {
     node.log<ROSNode::Log::ERROR>("IMU error: %s", imu.status_str());
+    delay(500);
+  }
 }
 
 static inline constexpr uint16_t first_decimal(float value)

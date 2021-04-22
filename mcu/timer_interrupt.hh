@@ -4,7 +4,7 @@
 
 volatile bool timer_interrupt_flag = false;
 
-#ifdef defined(ARDUINO_AVR_UNO) || defined(__AVR_ATmega2560__)
+#if defined(ARDUINO_AVR_UNO) || defined(__AVR_ATmega2560__)
 /// (interferes with analog pins 9, 10).
 ISR(TIMER2_COMPA_vect)
 #else
@@ -17,7 +17,7 @@ ISR(TIMER3_COMPA_vect)
 static inline void setup_timer_interrupt()
 {
   noInterrupts();
-#ifdef defined(ARDUINO_AVR_UNO) || defined(__AVR_ATmega2560__)
+#if defined(ARDUINO_AVR_UNO) || defined(__AVR_ATmega2560__)
   TCCR2A = 0;
   TCCR2B = 0;
   TCNT2 = 0;

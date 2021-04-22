@@ -1,18 +1,20 @@
 #pragma once
 
-#include <ICM_20948.h>
-#include <SPI.h>
 #include "ds/array.hh"
+
+#include <ICM_20948.h>
+#include <Wire.h>
 
 class IMU
 {
-  ICM_20948_SPI _device;
+  ICM_20948_I2C _device;
 
 public:
-  inline void init(uint8_t cs_pin)
+  inline void init()
   {
-    SPI.begin();
-    _device.begin(cs_pin, SPI);
+    Wire.begin();
+    Wire.setClock(400'000);
+    _device.begin(Wire, 1);
   }
 
   inline bool ready()
