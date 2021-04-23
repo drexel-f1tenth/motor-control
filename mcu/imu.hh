@@ -17,6 +17,20 @@ public:
     _device.begin(Wire, 1);
   }
 
+  inline ICM_20948_Status_e reset()
+  {
+    _device.swReset();
+    return status();
+  }
+
+
+  inline ICM_20948_Status_e wakeup()
+  {
+    _device.sleep(false);
+    _device.lowPower(false);
+    return status();
+  }
+
   inline bool ready()
   {
     return _device.dataReady();
@@ -41,4 +55,15 @@ public:
   {
     return {_device.accX(), _device.accY(), _device.accZ()};
   }
+
+  inline Array<float, 3> gyroscope_data()
+  {
+    return {_device.gyrX(), _device.gyrY(), _device.gyrZ()};
+  }
+
+  inline Array<float, 3> magnetometer_data()
+  {
+    return {_device.magX(), _device.magY(), _device.magZ()};
+  }
 };
+
