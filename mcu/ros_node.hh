@@ -31,7 +31,7 @@ private:
   // template args: MAX_SUBSCRIBERS, MAX_PUBLISHERS, INPUT_SIZE, OUTPUT_SIZE
   ros::NodeHandle_<ArduinoHardware, 1, 0, 128, 128> _node;
   ros::Subscriber<Serialized> _mcu_ctl;
-  char _msg_buf[32];
+  char _msg_buf[128];
 
 public:
   ROSNode(Callback cb) : _mcu_ctl{control_topic, cb} {}

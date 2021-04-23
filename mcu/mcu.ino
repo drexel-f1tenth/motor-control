@@ -13,27 +13,42 @@ Servo steering;
 Servo throttle;
 PID pid{1.8, 0.03, 0.0};
 
+static void set_steering(int16_t);
+static void set_throttle(int16_t);
+
 static int16_t throttle_setpoint = 0;
 ROSNode node{[](auto const& serialized) {
   ROSNode::Ctl msg{serialized};
-
   throttle_setpoint = (int16_t)msg.throttle;
+  set_steering(msg.steering);
+}};
 
-  static int16_t steering_setpoint = 0;
+static void set_steering(int16_t setpoint)
+{
   static constexpr int16_t steering_neutral = 90;
   static constexpr int16_t steering_cap = 40;
-  if (msg.steering != steering_setpoint)
-  {
-    steering_setpoint = constrain(msg.steering, -steering_cap, steering_cap);
-    steering.write(steering_neutral + steering_setpoint);
-  }
-}};
+  setpoint = constrain(setpoint, -steering_cap, steering_cap);
+  steering.write(steering_neutral + setpoint);
+}
+
+static void set_throttle(int16_t adjust)
+{
+  static constexpr int16_t throttle_neutral = 90;
+  static constexpr int16_t throttle_cap = 30;
+  adjust = constrain(adjust, -throttle_cap, throttle_cap);
+  throttle.write(throttle_neutral + adjust);
+}
 
 void setup()
 {
   setup_timer_interrupt();
+
   steering.attach(6);
+  set_steering(0);
+  
   throttle.attach(8);
+  set_throttle(0);
+
   node.init();
   imu.init();
 
@@ -43,11 +58,18 @@ void setup()
     delay(500);
   }
 
-  while (imu.status() != ICM_20948_Stat_Ok)
-  {
-    node.log<ROSNode::Log::ERROR>("IMU error: %s", imu.status_str());
-    delay(500);
-  }
+  // while (imu.status() != ICM_20948_Stat_Ok)
+  // {
+  //   node.log<ROSNode::Log::ERROR>("IMU error: %s", imu.status_str());
+  //   delay(500);
+  // }
+  auto status = imu.reset();
+  // if (status != ICM_20948_Stat_Ok)
+  //   node.log<ROSNode::Log::ERROR>("IMU error: %s", imu.status_str());
+  delay(250);
+  imu.wakeup();
+  // if (imu.status() != ICM_20948_Stat_Ok)
+  //   node.log<ROSNode::Log::ERROR>("IMU error: %s", imu.status_str());
 }
 
 static inline constexpr uint16_t first_decimal(float value)
@@ -63,35 +85,40 @@ void loop()
   if (!rps_update)
     return;
 
-  static constexpr int16_t throttle_cap = 30;
-
   int16_t adjust = 0;
   if (throttle_setpoint == 0)
     adjust = (int16_t)pid.update(rps.value(), (float)throttle_setpoint);
   else
     adjust = throttle_setpoint;
 
-  adjust = constrain(adjust, -throttle_cap, throttle_cap);
+  set_throttle(adjust);
 
-  static constexpr int16_t throttle_neutral = 90;
-  throttle.write(throttle_neutral + adjust);
-
-  node.log(
-    "RPS: %d, %d.%u, %d",
-    throttle_setpoint,
-    (int16_t)rps.value(),
-    first_decimal(rps.value()),
-    adjust);
 
   imu.update();
   if (imu.ready())
   {
     auto const acc = imu.accelerometer_data();
+    auto const mag = imu.magnetometer_data();
+    auto const gyr = imu.gyroscope_data();
     node.log(
-      "IMU: %d.%d, %d.%d",
+      "%d,%d.%u,%d,%d.%u,%d.%u,%d.%u,%d.%u,%d.%u,%d.%u,%d.%u",
+      throttle_setpoint,
+      (int16_t)rps.value(),
+      first_decimal(rps.value()),
+      adjust,
       (int16_t)acc[0],
       first_decimal(acc[0]),
       (int16_t)acc[1],
-      first_decimal(acc[1]));
+      first_decimal(acc[1]),
+      (int16_t)acc[2],
+      first_decimal(acc[2]),
+      (int16_t)mag[0],
+      first_decimal(mag[0]),
+      (int16_t)mag[1],
+      first_decimal(mag[1]),
+      (int16_t)mag[2],
+      first_decimal(mag[2]),
+      (int16_t)gyr[2],
+      first_decimal(gyr[2]));
   }
 }
