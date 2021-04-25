@@ -18,17 +18,8 @@ class RPSSensor
   /// Frequency of "useful" RPS sensor data accumulation, in Hz.
   static constexpr size_t sample_freq_hz = 8;
   static constexpr int16_t threshold = 700;
-  static constexpr size_t wheel_spokes = 6;
+  static constexpr size_t encoder_spokes = 5;
   static constexpr size_t buf_len = update_freq_hz / sample_freq_hz;
-
-  enum class State : uint_fast8_t
-  {
-    Reset = 0,
-    Count = 1,
-    Mark = 2,
-    Forward = 3,
-    Reverse = 4,
-  };
 
   struct Sensor
   {
@@ -53,11 +44,9 @@ class RPSSensor
 
   volatile bool& _timer_interrupt_flag;
   float _rps = 0.0;
-  RingBuffer<uint8_t, buf_len> _spoke_counts;
+  RingBuffer<int8_t, buf_len> _spoke_counts;
   Array<Sensor, 2> _sensors;
-  State _state = State::Reset;
-  int_fast8_t _direction = 0;
-  int_fast8_t _direction_prev = 0;
+  bool _armed = false;
 
 public:
   RPSSensor(uint8_t pin0, uint8_t pin1, volatile bool& timer_interrupt_flag)
@@ -73,63 +62,24 @@ public:
     bool const a = _sensors[0].detects_spoke();
     bool const b = _sensors[1].detects_spoke();
 
-    if ((_state == State::Reset) && (a ^ b))
+    if (a && b)
     {
-      _state = State::Count;
+      _armed = true;
     }
-    else if ((_state == State::Reset) && (a & b))
+    else if (_armed && (bool)(a ^ b))
     {
-      _state = State::Mark;
-    }
-    else if ((_state == State::Count) && (!a & !b))
-    {
-      _spoke_counts.current() += 1;
-      _state = State::Reset;
-    }
-    else if ((_state == State::Count) && (a & b))
-    {
-      _spoke_counts.current() += 1;
-      _state = State::Mark;
-    }
-    else if ((_state == State::Mark) && (!a & !b))
-    {
-      _state = State::Reset;
-    }
-    else if ((_state == State::Mark) && (a & !b))
-    {
-      _direction += 1;
-      _state = State::Forward;
-    }
-    else if ((_state == State::Mark) && (!a & b))
-    {
-      _direction -= 1;
-      _state = State::Reverse;
-    }
-    else if ((_state == State::Forward) && (!a & !b))
-    {
-      _spoke_counts.current() += 1;
-      _state = State::Reset;
-    }
-    else if ((_state == State::Reverse) && (!a & !b))
-    {
-      _spoke_counts.current() += 1;
-      _state = State::Reset;
+      _armed = false;
+      int16_t const direction = a ? 1 : -1;
+      _spoke_counts.current() += direction;
     }
 
     if (has_update)
     {
-      int16_t sum = _spoke_counts.sum<int16_t>();
-      if (_direction < 0 || ((_direction == 0) && (_direction_prev < 0)))
-        sum *= -1;
-
+      auto const sum = _spoke_counts.sum();
       static constexpr float multiplier =
-        (float)sample_freq_hz / (float)wheel_spokes;
+        (float)sample_freq_hz / (float)encoder_spokes;
       _rps = (float)sum * multiplier;
 
-      if (_direction != 0)
-        _direction_prev = _direction;
-
-      _direction = 0;
       _spoke_counts.shift();
       _spoke_counts.current() = 0;
     }

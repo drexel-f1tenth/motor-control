@@ -45,7 +45,7 @@ void setup()
 
   steering.attach(6);
   set_steering(0);
-  
+
   throttle.attach(8);
   set_throttle(0);
 
@@ -91,6 +91,13 @@ void loop()
   else
     adjust = throttle_setpoint;
 
+  node.log(
+    "RPS: %d %d %d.%u",
+    throttle_setpoint,
+    adjust,
+    (int16_t)rps.value(),
+    first_decimal(rps.value()));
+
   set_throttle(adjust);
 
   imu.update();
@@ -99,25 +106,25 @@ void loop()
     auto const acc = imu.accelerometer_data();
     auto const mag = imu.magnetometer_data();
     auto const gyr = imu.gyroscope_data();
-    node.log(
-      "%d,%d.%u,%d,%d.%u,%d.%u,%d.%u,%d.%u,%d.%u,%d.%u,%d.%u",
-      throttle_setpoint,
-      (int16_t)rps.value(),
-      first_decimal(rps.value()),
-      adjust,
-      (int16_t)acc[0],
-      first_decimal(acc[0]),
-      (int16_t)acc[1],
-      first_decimal(acc[1]),
-      (int16_t)acc[2],
-      first_decimal(acc[2]),
-      (int16_t)mag[0],
-      first_decimal(mag[0]),
-      (int16_t)mag[1],
-      first_decimal(mag[1]),
-      (int16_t)mag[2],
-      first_decimal(mag[2]),
-      (int16_t)gyr[2],
-      first_decimal(gyr[2]));
+    // node.log(
+    //   "%d,%d.%u,%d,%d.%u,%d.%u,%d.%u,%d.%u,%d.%u,%d.%u,%d.%u",
+    //   throttle_setpoint,
+    //   (int16_t)rps.value(),
+    //   first_decimal(rps.value()),
+    //   adjust,
+    //   (int16_t)acc[0],
+    //   first_decimal(acc[0]),
+    //   (int16_t)acc[1],
+    //   first_decimal(acc[1]),
+    //   (int16_t)acc[2],
+    //   first_decimal(acc[2]),
+    //   (int16_t)mag[0],
+    //   first_decimal(mag[0]),
+    //   (int16_t)mag[1],
+    //   first_decimal(mag[1]),
+    //   (int16_t)mag[2],
+    //   first_decimal(mag[2]),
+    //   (int16_t)gyr[2],
+    //   first_decimal(gyr[2]));
   }
 }
