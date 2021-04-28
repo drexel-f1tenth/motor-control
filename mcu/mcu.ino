@@ -61,6 +61,8 @@ static inline constexpr uint16_t first_decimal(float value)
 
 void update_64hz()
 {
+  throttle.update(rps.value() == 0.0);
+
   int16_t adjust = 0;
   if (throttle_setpoint == 0)
     adjust = (int16_t)pid.update(rps.value(), (float)throttle_setpoint);

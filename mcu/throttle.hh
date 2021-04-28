@@ -13,25 +13,23 @@ class Throttle
   static constexpr int16_t break_magnitude = 90;
 
   enum struct State : uint8_t
+  // clang-format off
   {
-    // clang-format off
     Stop           = 0b0000,
     Forward        = 0b0100,
     ForwardNeutral = 0b0101,
     ForwardBreak   = 0b0110,
     Reverse        = 0b1000,
     ReverseNeutral = 0b1001,
-    ReverseBreak   = 0b1010
-    // clang-format on
+    ReverseBreak   = 0b1010,
   };
+  // clang-format on
 
   Servo _esc;
   int16_t _position = 0;
   State _state = State::Stop;
 
 public:
-  Throttle() {}
-
   void init(uint8_t esc_pin)
   {
     _esc.attach(esc_pin);
@@ -45,7 +43,13 @@ public:
 
     // Transition from neutral or break to stop.
     if ((uint8_t)_state & 0b0011)
+    {
+      write_position(0);
+      // TODO: Deal with the ESC lockout here instead of blocking everything
+      // with `delay`.
+      delay(40);
       _state = State::Stop;
+    }
   }
 
   void set_position(int16_t position)
@@ -100,12 +104,12 @@ private:
 
     if (moving_forward())
     {
-      _esc.write(-break_magnitude);
+      _esc.write(esc_neutral - break_magnitude);
       _state = State::ForwardBreak;
     }
     else if (moving_reverse())
     {
-      _esc.write(break_magnitude);
+      _esc.write(esc_neutral + break_magnitude);
       _state = State::ReverseBreak;
     }
   }
