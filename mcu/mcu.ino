@@ -2,6 +2,7 @@
 #include "pid.hh"
 #include "ros_node.hh"
 #include "rps_sensor.hh"
+#include "throttle.hh"
 #include "timer_interrupt.hh"
 
 #include <Arduino.h>
@@ -10,18 +11,8 @@
 RPSSensor rps{A0, A1};
 IMU imu;
 Servo steering;
-Servo throttle;
+Throttle throttle;
 PID pid{1.8, 0.03, 0.0};
-
-static void set_steering(int16_t);
-static void set_throttle(int16_t);
-
-static int16_t throttle_setpoint = 0;
-ROSNode node{[](auto const& serialized) {
-  ROSNode::Ctl msg{serialized};
-  throttle_setpoint = (int16_t)msg.throttle;
-  set_steering(msg.steering);
-}};
 
 static inline void set_steering(int16_t setpoint)
 {
@@ -31,13 +22,12 @@ static inline void set_steering(int16_t setpoint)
   steering.write(steering_neutral + setpoint);
 }
 
-static inline void set_throttle(int16_t adjust)
-{
-  static constexpr int16_t throttle_neutral = 90;
-  static constexpr int16_t throttle_cap = 30;
-  adjust = constrain(adjust, -throttle_cap, throttle_cap);
-  throttle.write(throttle_neutral + adjust);
-}
+static int16_t throttle_setpoint = 0;
+ROSNode node{[](auto const& serialized) {
+  ROSNode::Ctl msg{serialized};
+  throttle_setpoint = (int16_t)msg.throttle;
+  set_steering(msg.steering);
+}};
 
 void setup()
 {
@@ -46,8 +36,7 @@ void setup()
   steering.attach(6);
   set_steering(0);
 
-  throttle.attach(8);
-  set_throttle(0);
+  throttle.init(8);
 
   node.init();
   imu.init();
@@ -78,7 +67,6 @@ void update_64hz()
   else
     adjust = throttle_setpoint;
 
-  static unsigned long prev_ms = 0;
   node.log(
     "RPS: %d %d %d.%u",
     throttle_setpoint,
@@ -86,7 +74,7 @@ void update_64hz()
     (int16_t)rps.value(),
     first_decimal(rps.value()));
 
-  set_throttle(adjust);
+  throttle.set_position(adjust);
 
   imu.update();
   if (imu.ready())
@@ -121,6 +109,7 @@ void loop()
 {
   node.spin_once();
 
+  // For most accuate results, unset timer_interrupt_flag as soon as it is read.
   bool const timer_fired = timer_interrupt_flag;
   if (timer_fired)
     timer_interrupt_flag = false;
