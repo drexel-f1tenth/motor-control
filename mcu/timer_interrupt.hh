@@ -2,6 +2,9 @@
 
 #include <Arduino.h>
 
+// Set to true at a frequency of 64 Hz. It is the responsibility of the `loop`
+// callback to unset this flag before returning.
+// TODO: probably not volatile...
 volatile bool timer_interrupt_flag = false;
 
 #if defined(ARDUINO_AVR_UNO) || defined(__AVR_ATmega2560__)
