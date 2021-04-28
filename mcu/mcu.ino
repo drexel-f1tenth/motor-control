@@ -2,7 +2,6 @@
 #include "pid.hh"
 #include "ros_node.hh"
 #include "rps_sensor.hh"
-#include "throttle.hh"
 #include "timer_interrupt.hh"
 
 #include <Arduino.h>
@@ -80,15 +79,12 @@ void update_64hz()
     adjust = throttle_setpoint;
 
   static unsigned long prev_ms = 0;
-  auto const t_ms = millis();
   node.log(
-    "RPS: %ums %d %d %d.%u",
-    (t_ms - prev_ms),
+    "RPS: %d %d %d.%u",
     throttle_setpoint,
     adjust,
     (int16_t)rps.value(),
     first_decimal(rps.value()));
-  prev_ms = t_ms;
 
   set_throttle(adjust);
 
@@ -124,9 +120,13 @@ void update_64hz()
 void loop()
 {
   node.spin_once();
-  rps.update(timer_interrupt_flag);
-  if (timer_interrupt_flag)
-    update_64hz();
 
-  timer_interrupt_flag = false;
+  bool const timer_fired = timer_interrupt_flag;
+  if (timer_fired)
+    timer_interrupt_flag = false;
+
+  rps.update(timer_fired);
+
+  if (timer_fired)
+    update_64hz();
 }

@@ -51,9 +51,9 @@ public:
   RPSSensor(uint8_t pin0, uint8_t pin1) : _sensors{{Sensor{pin0}, Sensor{pin1}}}
   {}
 
-  /// Must be run on each loop to accumulate sensor data. Return true if the
-  /// angular velocity has been updated.
-  inline void update(bool timer_interrupt_flag)
+  /// Must be run on each loop to accumulate sensor data. Updated values for
+  /// angular velocity are made available at 64Hz.
+  inline void update(bool timer_fired)
   {
     bool const a = _sensors[0].detects_spoke();
     bool const b = _sensors[1].detects_spoke();
@@ -69,7 +69,7 @@ public:
       _spoke_counts.current() += direction;
     }
 
-    if (timer_interrupt_flag)
+    if (timer_fired)
     {
       auto const sum = _spoke_counts.sum();
       static constexpr float multiplier =
