@@ -21,7 +21,7 @@ public:
     _d_filter.push(err - _d_filter.current());
     auto const p = _kp * err;
     auto const i = _ki * _i;
-    auto const d = _d_filter.sum() / (float)_d_filter.cap();
+    auto const d = _kd * _d_filter.sum() / (float)_d_filter.cap();
     return p + i + d;
   }
 };
