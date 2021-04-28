@@ -42,23 +42,19 @@ class RPSSensor
     }
   };
 
-  volatile bool& _timer_interrupt_flag;
   float _rps = 0.0;
   RingBuffer<int8_t, buf_len> _spoke_counts;
   Array<Sensor, 2> _sensors;
   bool _armed = false;
 
 public:
-  RPSSensor(uint8_t pin0, uint8_t pin1, volatile bool& timer_interrupt_flag)
-  : _timer_interrupt_flag{timer_interrupt_flag},
-    _sensors{{Sensor{pin0}, Sensor{pin1}}}
+  RPSSensor(uint8_t pin0, uint8_t pin1) : _sensors{{Sensor{pin0}, Sensor{pin1}}}
   {}
 
   /// Must be run on each loop to accumulate sensor data. Return true if the
   /// angular velocity has been updated.
-  inline bool update()
+  inline void update(bool timer_interrupt_flag)
   {
-    bool const has_update = _timer_interrupt_flag;
     bool const a = _sensors[0].detects_spoke();
     bool const b = _sensors[1].detects_spoke();
 
@@ -73,7 +69,7 @@ public:
       _spoke_counts.current() += direction;
     }
 
-    if (has_update)
+    if (timer_interrupt_flag)
     {
       auto const sum = _spoke_counts.sum();
       static constexpr float multiplier =
@@ -83,11 +79,6 @@ public:
       _spoke_counts.shift();
       _spoke_counts.current() = 0;
     }
-
-    if (has_update)
-      _timer_interrupt_flag = false;
-
-    return has_update;
   }
 
   /// Return the RPS value.

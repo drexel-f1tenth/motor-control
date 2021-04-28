@@ -2,12 +2,13 @@
 #include "pid.hh"
 #include "ros_node.hh"
 #include "rps_sensor.hh"
+#include "throttle.hh"
 #include "timer_interrupt.hh"
 
 #include <Arduino.h>
 #include <Servo.h>
 
-RPSSensor rps{A0, A1, timer_interrupt_flag};
+RPSSensor rps{A0, A1};
 IMU imu;
 Servo steering;
 Servo throttle;
@@ -63,13 +64,6 @@ void setup()
   //   node.log<ROSNode::Log::ERROR>("IMU error: %s", imu.status_str());
   //   delay(500);
   // }
-  auto status = imu.reset();
-  // if (status != ICM_20948_Stat_Ok)
-  //   node.log<ROSNode::Log::ERROR>("IMU error: %s", imu.status_str());
-  delay(250);
-  imu.wakeup();
-  // if (imu.status() != ICM_20948_Stat_Ok)
-  //   node.log<ROSNode::Log::ERROR>("IMU error: %s", imu.status_str());
 }
 
 static inline constexpr uint16_t first_decimal(float value)
@@ -77,26 +71,24 @@ static inline constexpr uint16_t first_decimal(float value)
   return (uint16_t)round((value - floor(value)) * 10);
 }
 
-void loop()
+void update_64hz()
 {
-  node.spin_once();
-
-  bool const rps_update = rps.update();
-  if (!rps_update)
-    return;
-
   int16_t adjust = 0;
   if (throttle_setpoint == 0)
     adjust = (int16_t)pid.update(rps.value(), (float)throttle_setpoint);
   else
     adjust = throttle_setpoint;
 
+  static unsigned long prev_ms = 0;
+  auto const t_ms = millis();
   node.log(
-    "RPS: %d %d %d.%u",
+    "RPS: %ums %d %d %d.%u",
+    (t_ms - prev_ms),
     throttle_setpoint,
     adjust,
     (int16_t)rps.value(),
     first_decimal(rps.value()));
+  prev_ms = t_ms;
 
   set_throttle(adjust);
 
@@ -127,4 +119,14 @@ void loop()
     //   (int16_t)gyr[2],
     //   first_decimal(gyr[2]));
   }
+}
+
+void loop()
+{
+  node.spin_once();
+  rps.update(timer_interrupt_flag);
+  if (timer_interrupt_flag)
+    update_64hz();
+
+  timer_interrupt_flag = false;
 }
