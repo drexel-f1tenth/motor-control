@@ -1,18 +1,22 @@
 #include "imu.hh"
-#include "pid.hh"
+// #include "pid.hh"
 #include "ros_node.hh"
 #include "rps_sensor.hh"
 #include "throttle.hh"
 #include "timer_interrupt.hh"
 
 #include <Arduino.h>
+#include <PID_v2.h>
 #include <Servo.h>
+
+static constexpr bool pid_only_on_break = false;
 
 RPSSensor rps{A0, A1};
 IMU imu;
 Servo steering;
 Throttle throttle;
-PID pid{1.8, 0.03, 0.0};
+// PID pid{1.5, 0.04, 0.0};
+PID_v2 pid{1.5, 0.04, 0.0, PID::Direct, PID::P_On::Error};
 
 static inline void set_steering(int16_t setpoint)
 {
@@ -22,10 +26,10 @@ static inline void set_steering(int16_t setpoint)
   steering.write(steering_neutral + setpoint);
 }
 
-static int16_t throttle_setpoint = 0;
+// static int16_t throttle_setpoint = 0;
 ROSNode node{[](auto const& serialized) {
   ROSNode::Ctl msg{serialized};
-  throttle_setpoint = (int16_t)msg.throttle;
+  pid.Setpoint((double)msg.throttle);
   set_steering(msg.steering);
 }};
 
@@ -40,6 +44,8 @@ void setup()
 
   node.init();
   imu.init();
+
+  pid.Start(0, 0, 0);
 
   while (!node.connected())
   {
@@ -63,48 +69,49 @@ void update_64hz()
 {
   throttle.update(rps.value() == 0.0);
 
-  int16_t adjust = 0;
-  if (throttle_setpoint == 0)
-    adjust = (int16_t)pid.update(rps.value(), (float)throttle_setpoint);
-  else
-    adjust = throttle_setpoint;
+  auto const adjust = [] {
+    if (!pid_only_on_break || (pid.GetSetpoint() == 0))
+      return (int16_t)pid.Run(rps.value());
+    else
+      return (int16_t)pid.GetSetpoint();
+  }();
 
   node.log(
     "RPS: %d %d %d.%u",
-    throttle_setpoint,
+    pid.GetSetpoint(),
     adjust,
     (int16_t)rps.value(),
     first_decimal(rps.value()));
 
   throttle.set_position(adjust);
 
-  imu.update();
-  if (imu.ready())
-  {
-    auto const acc = imu.accelerometer_data();
-    auto const mag = imu.magnetometer_data();
-    auto const gyr = imu.gyroscope_data();
-    // node.log(
-    //   "%d,%d.%u,%d,%d.%u,%d.%u,%d.%u,%d.%u,%d.%u,%d.%u,%d.%u",
-    //   throttle_setpoint,
-    //   (int16_t)rps.value(),
-    //   first_decimal(rps.value()),
-    //   adjust,
-    //   (int16_t)acc[0],
-    //   first_decimal(acc[0]),
-    //   (int16_t)acc[1],
-    //   first_decimal(acc[1]),
-    //   (int16_t)acc[2],
-    //   first_decimal(acc[2]),
-    //   (int16_t)mag[0],
-    //   first_decimal(mag[0]),
-    //   (int16_t)mag[1],
-    //   first_decimal(mag[1]),
-    //   (int16_t)mag[2],
-    //   first_decimal(mag[2]),
-    //   (int16_t)gyr[2],
-    //   first_decimal(gyr[2]));
-  }
+  // imu.update();
+  // if (imu.ready())
+  // {
+  //   auto const acc = imu.accelerometer_data();
+  //   auto const mag = imu.magnetometer_data();
+  //   auto const gyr = imu.gyroscope_data();
+  //   node.log(
+  //     "%d,%d.%u,%d,%d.%u,%d.%u,%d.%u,%d.%u,%d.%u,%d.%u,%d.%u",
+  //     throttle_setpoint,
+  //     (int16_t)rps.value(),
+  //     first_decimal(rps.value()),
+  //     adjust,
+  //     (int16_t)acc[0],
+  //     first_decimal(acc[0]),
+  //     (int16_t)acc[1],
+  //     first_decimal(acc[1]),
+  //     (int16_t)acc[2],
+  //     first_decimal(acc[2]),
+  //     (int16_t)mag[0],
+  //     first_decimal(mag[0]),
+  //     (int16_t)mag[1],
+  //     first_decimal(mag[1]),
+  //     (int16_t)mag[2],
+  //     first_decimal(mag[2]),
+  //     (int16_t)gyr[2],
+  //     first_decimal(gyr[2]));
+  // }
 }
 
 void loop()
