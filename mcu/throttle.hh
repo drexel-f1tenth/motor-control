@@ -10,7 +10,7 @@ class Throttle
 {
   static constexpr int16_t esc_neutral = 90;
   static constexpr int16_t throttle_cap = 40;
-  static constexpr int16_t break_magnitude = 90;
+  static constexpr int16_t brake_magnitude = 90;
 
   enum struct State : uint8_t
   // clang-format off
@@ -18,10 +18,10 @@ class Throttle
     Stop           = 0b0000,
     Forward        = 0b0100,
     ForwardNeutral = 0b0101,
-    ForwardBreak   = 0b0110,
+    ForwardBrake   = 0b0110,
     Reverse        = 0b1000,
     ReverseNeutral = 0b1001,
-    ReverseBreak   = 0b1010,
+    ReverseBrake   = 0b1010,
   };
   // clang-format on
 
@@ -41,7 +41,7 @@ public:
     if (!wheels_stopped)
       return;
 
-    // Transition from neutral or break to stop.
+    // Transition from neutral or brake to stop.
     if ((uint8_t)_state & 0b0011)
     {
       write_position(0);
@@ -66,7 +66,7 @@ public:
     }
     else if ((_state != State::Stop) && ((position > 0) != moving_forward()))
     {
-      apply_break();
+      brake();
     }
     else if (position > 0)
     {
@@ -80,20 +80,20 @@ public:
     }
   }
 
-  void apply_break()
+  void brake()
   {
     if (_state == State::Stop)
       return;
 
     if (moving_forward())
     {
-      _esc.write(esc_neutral - break_magnitude);
-      _state = State::ForwardBreak;
+      _esc.write(esc_neutral - brake_magnitude);
+      _state = State::ForwardBrake;
     }
     else if (moving_reverse())
     {
-      _esc.write(esc_neutral + break_magnitude);
-      _state = State::ReverseBreak;
+      _esc.write(esc_neutral + brake_magnitude);
+      _state = State::ReverseBrake;
     }
   }
 

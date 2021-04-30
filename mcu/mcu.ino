@@ -10,7 +10,7 @@
 #include <Servo.h>
 
 static constexpr bool use_pid = true;
-static constexpr bool use_pid_when_breaking = false;
+static constexpr bool use_pid_when_braking = false;
 
 RPSSensor rps{A0, A1};
 IMU imu;
@@ -85,8 +85,8 @@ void update_64hz()
     (int16_t)rps.value(),
     first_decimal(rps.value()));
 
-  if (!use_pid_when_breaking && (throttle_setpoint == 0))
-    throttle.apply_break();
+  if (!use_pid_when_braking && (throttle_setpoint == 0))
+    throttle.brake();
   else
     throttle.set_position(adjust);
 
