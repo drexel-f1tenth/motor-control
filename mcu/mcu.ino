@@ -9,14 +9,15 @@
 #include <PID_v2.h>
 #include <Servo.h>
 
-static constexpr bool pid_only_on_break = false;
+static constexpr bool use_pid = true;
+static constexpr bool use_pid_when_breaking = false;
 
 RPSSensor rps{A0, A1};
 IMU imu;
 Servo steering;
 Throttle throttle;
 // PID pid{1.5, 0.04, 0.0};
-PID_v2 pid{1.5, 0.04, 0.0, PID::Direct, PID::P_On::Error};
+PID_v2 pid{2.5, 0.2, 0.1, PID::Direct, PID::P_On::Error};
 
 static inline void set_steering(int16_t setpoint)
 {
@@ -26,10 +27,11 @@ static inline void set_steering(int16_t setpoint)
   steering.write(steering_neutral + setpoint);
 }
 
-// static int16_t throttle_setpoint = 0;
+static int16_t throttle_setpoint = 0;
 ROSNode node{[](auto const& serialized) {
   ROSNode::Ctl msg{serialized};
-  pid.Setpoint((double)msg.throttle);
+  throttle_setpoint = (int16_t)msg.throttle;
+  pid.Setpoint((double)throttle_setpoint);
   set_steering(msg.steering);
 }};
 
@@ -70,20 +72,23 @@ void update_64hz()
   throttle.update(rps.value() == 0.0);
 
   auto const adjust = [] {
-    if (!pid_only_on_break || (pid.GetSetpoint() == 0))
+    if constexpr (use_pid)
       return (int16_t)pid.Run(rps.value());
     else
-      return (int16_t)pid.GetSetpoint();
+      return (int16_t)throttle_setpoint;
   }();
 
   node.log(
     "RPS: %d %d %d.%u",
-    pid.GetSetpoint(),
+    throttle_setpoint,
     adjust,
     (int16_t)rps.value(),
     first_decimal(rps.value()));
 
-  throttle.set_position(adjust);
+  if (!use_pid_when_breaking && (throttle_setpoint == 0))
+    throttle.apply_break();
+  else
+    throttle.set_position(adjust);
 
   // imu.update();
   // if (imu.ready())

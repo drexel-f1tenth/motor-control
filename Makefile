@@ -24,7 +24,7 @@ build: $(C_SRC)
 
 flash: build
 	arduino-cli upload -p $(PORT) -b $(BOARD) \
-		-v --verify --input-dir build
+		-v --input-dir build
 
 run: flash
 	rosrun rosserial_arduino serial_node.py _port:=$(PORT)

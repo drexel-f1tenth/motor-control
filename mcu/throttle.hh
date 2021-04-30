@@ -80,6 +80,23 @@ public:
     }
   }
 
+  void apply_break()
+  {
+    if (_state == State::Stop)
+      return;
+
+    if (moving_forward())
+    {
+      _esc.write(esc_neutral - break_magnitude);
+      _state = State::ForwardBreak;
+    }
+    else if (moving_reverse())
+    {
+      _esc.write(esc_neutral + break_magnitude);
+      _state = State::ReverseBreak;
+    }
+  }
+
 private:
   inline bool moving_forward() const
   {
@@ -95,22 +112,5 @@ private:
   {
     position = constrain(position, -throttle_cap, throttle_cap);
     _esc.write(esc_neutral + position);
-  }
-
-  inline void apply_break()
-  {
-    if (_state == State::Stop)
-      return;
-
-    if (moving_forward())
-    {
-      _esc.write(esc_neutral - break_magnitude);
-      _state = State::ForwardBreak;
-    }
-    else if (moving_reverse())
-    {
-      _esc.write(esc_neutral + break_magnitude);
-      _state = State::ReverseBreak;
-    }
   }
 };
