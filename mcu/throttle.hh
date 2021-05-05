@@ -10,7 +10,7 @@ class Throttle
 {
   static constexpr int16_t esc_neutral = 90;
   static constexpr int16_t throttle_cap = 40;
-  static constexpr int16_t brake_magnitude = 90;
+  static constexpr int16_t brake_magnitude = throttle_cap;
 
   enum struct State : uint8_t
   // clang-format off

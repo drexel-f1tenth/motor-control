@@ -39,10 +39,10 @@ void setup()
 {
   setup_timer_interrupt();
 
-  steering.attach(6);
+  steering.attach(10);
   set_steering(0);
 
-  throttle.init(8);
+  throttle.init(11);
 
   node.init();
   imu.init();
