@@ -4,8 +4,7 @@ BOARD ?= arduino:avr:uno
 ADDITIONAL_URLS ?= --additional-urls "https://raw.githubusercontent.com/sparkfun/Arduino_Boards/master/IDE_Board_Manager/package_sparkfun_index.json"
 DEPS_LIBS ?= \
 	"SparkFun 9DoF IMU Breakout - ICM 20948 - Arduino Library" \
-	servo \
-	PID_v2
+	servo
 
 .PHONY: clean flash run
 

@@ -5,7 +5,7 @@
 #include <Arduino.h>
 #include <Servo.h>
 
-// TODO: document state machine
+// See documentation at: https://github.com/drexel-f1tenth/docs/blob/main/throttle-control.md
 class Throttle
 {
   static constexpr int16_t esc_neutral = 90;

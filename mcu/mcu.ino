@@ -1,23 +1,21 @@
 #include "imu.hh"
-// #include "pid.hh"
+#include "pid.hh"
 #include "ros_node.hh"
 #include "rps_sensor.hh"
 #include "throttle.hh"
 #include "timer_interrupt.hh"
 
 #include <Arduino.h>
-#include <PID_v2.h>
 #include <Servo.h>
 
-static constexpr bool use_pid = true;
+static constexpr bool use_pid = false;
 static constexpr bool use_pid_when_braking = false;
 
 RPSSensor rps{A0, A1};
 IMU imu;
 Servo steering;
 Throttle throttle;
-// PID pid{1.5, 0.04, 0.0};
-PID_v2 pid{2.5, 0.2, 0.1, PID::Direct, PID::P_On::Error};
+PID pid{1.5, 0.04, 0.0};
 
 static inline void set_steering(int16_t setpoint)
 {
@@ -31,7 +29,6 @@ static int16_t throttle_setpoint = 0;
 ROSNode node{[](auto const& serialized) {
   ROSNode::Ctl msg{serialized};
   throttle_setpoint = (int16_t)msg.throttle;
-  pid.Setpoint((double)throttle_setpoint);
   set_steering(msg.steering);
 }};
 
@@ -46,8 +43,6 @@ void setup()
 
   node.init();
   imu.init();
-
-  pid.Start(0, 0, 0);
 
   while (!node.connected())
   {
@@ -73,7 +68,7 @@ void update_64hz()
 
   auto const adjust = [] {
     if constexpr (use_pid)
-      return (int16_t)pid.Run(rps.value());
+      return (int16_t)pid.update(rps.value(), throttle_setpoint);
     else
       return (int16_t)throttle_setpoint;
   }();
