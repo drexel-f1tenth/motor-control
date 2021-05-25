@@ -73,12 +73,12 @@ void update_64hz()
       return (int16_t)throttle_setpoint;
   }();
 
-  node.log(
-    "RPS: %d %d %d.%u",
-    throttle_setpoint,
-    adjust,
-    (int16_t)rps.value(),
-    first_decimal(rps.value()));
+  // node.log(
+  //   "RPS: %d %d %d.%u",
+  //   throttle_setpoint,
+  //   adjust,
+  //   (int16_t)rps.value(),
+  //   first_decimal(rps.value()));
 
   if (!use_pid_when_braking && (throttle_setpoint == 0))
     throttle.brake();
